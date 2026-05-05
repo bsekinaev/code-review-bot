@@ -12,9 +12,6 @@ def _load_config():
         private_key = f.read()
     return app_id, private_key
 
-with open(f'{PRIVATE_KEY_PATH}', 'r') as f:
-    PRIVATE_KEY = f.read()
-
 def generate_jwt():
     app_id, private_key = _load_config()
     now = int(time.time())
