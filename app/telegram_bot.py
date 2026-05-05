@@ -4,8 +4,8 @@ from decouple import config
 
 logger = logging.getLogger('uvicorn')
 
-BOT_TOKEN = config('TELEGRAM_BOT_TOKEN')
-CHAT_ID = config('TELEGRAM_CHAT_ID')
+BOT_TOKEN = config('TELEGRAM_BOT_TOKEN', default=None)
+CHAT_ID = config('TELEGRAM_CHAT_ID', default=None)
 
 async def send_telegram_message(text: str) -> bool:
     if not BOT_TOKEN or not CHAT_ID:

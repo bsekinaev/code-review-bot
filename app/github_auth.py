@@ -1,22 +1,29 @@
 import time, jwt, httpx
-from http.client import responses
-
+from functools import lru_cache
 from decouple import config
 
-APP_ID = config('GITHUB_APP_ID')
-PRIVATE_KEY_PATH = config('GITHUB_PRIVATE_KEY_PATH')
+def _load_config():
+    """Ленивая загрузка настроек GitHub App."""
+    app_id = config('GITHUB_APP_ID', default=None)
+    key_path = config('GITHUB_PRIVATE_KEY_PATH', default=None)
+    if not app_id or not key_path:
+        raise RuntimeError("GITHUB_APP_ID и GITHUB_PRIVATE_KEY_PATH обязательны")
+    with open(key_path, 'r') as f:
+        private_key = f.read()
+    return app_id, private_key
 
 with open(f'{PRIVATE_KEY_PATH}', 'r') as f:
     PRIVATE_KEY = f.read()
 
 def generate_jwt():
+    app_id, private_key = _load_config()
     now = int(time.time())
     payload = {
         'iat': now - 60,
         'exp': now + 600,
-        'iss': APP_ID,
+        'iss': app_id,
     }
-    token = jwt.encode(payload, PRIVATE_KEY, algorithm='RS256')
+    token = jwt.encode(payload, private_key, algorithm='RS256')
     return token
 
 async def get_installation_token(installation_id: int):
