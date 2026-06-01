@@ -1,23 +1,25 @@
 import base64
-import httpx
+from app.clients.github_client import GitHubClient
 from app.github_auth import get_installation_token
 
-async def github_request(installation_id:int, method: str, endpoint:str, **kwargs):
+
+async def github_request(installation_id: int, method: str, endpoint: str, **kwargs):
     token = await get_installation_token(installation_id)
     headers = {
         'Authorization': f'Bearer {token}',
         'Accept': 'application/vnd.github.v3+json',
     }
-    url = f'https://api.github.com{endpoint}'
-    async with httpx.AsyncClient() as client:
-        if method == 'GET':
-            response = await client.get(url, headers=headers, **kwargs)
-        elif method == 'POST':
-            response = await client.post(url, headers=headers, **kwargs)
-        else:
-            raise ValueError(f'Method {method} not supported')
-        response.raise_for_status()
-        return response.json()
+    client = await GitHubClient.get_client()
+
+    if method == 'GET':
+        response = await client.get(endpoint, headers=headers, **kwargs)
+    elif method == 'POST':
+        response = await client.post(endpoint, headers=headers, **kwargs)
+    else:
+        raise ValueError(f'Method {method} not supported')
+
+    response.raise_for_status()
+    return response.json()
 
 async def get_pull_request_files(installation_id:int, repo_full_name:str, pr_number:int):
     endpoint = f'/repos/{repo_full_name}/pulls/{pr_number}/files'

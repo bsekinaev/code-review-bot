@@ -11,6 +11,7 @@ from app.github_api import get_pull_request_files, get_file_content, create_pull
 from app.config_loader import get_review_config
 from app.linter import run_ruff
 from app.telegram_bot import send_telegram_message
+from app.clients.github_client import GitHubClient
 
 WEBHOOK_SECRET = config("WEBHOOK_SECRET")
 app = FastAPI()
@@ -47,6 +48,13 @@ def is_excluded(filename: str, masks: list[str]) -> bool:
             return True
     return False
 
+async def _safe_process_pr(data: dict):
+    """Обёртка для безопасного запуска фоновой задачи."""
+    try:
+        await process_pull_request(data)
+    except Exception as e:
+        logger.error(f'Failed to process PR: {e}', exc_info=True)
+
 
 async def process_pull_request(data: dict):
     pr = data.get("pull_request", {})
@@ -70,7 +78,7 @@ async def process_pull_request(data: dict):
     try:
         files_data = await get_pull_request_files(installation_id, repo_full_name, pr_number)
     except Exception as e:
-        logger.error(f'Не удалось получить список файлов', {e})
+        logger.error(f'Не удалось получить список файлов', {e}, exc_info=True)
         return
 
     python_files = [
@@ -151,7 +159,6 @@ async def process_pull_request(data: dict):
         await send_telegram_message(notify_text)
 
 
-
 @app.post("/webhook")
 async def github_webhook(request: Request, background_tasks: BackgroundTasks):
     payload = await request.body()
@@ -168,10 +175,18 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
     if event == "pull_request":
         action = data["action"]
         if action in ("opened", "synchronize", "reopened"):
-            asyncio.create_task(process_pull_request(data))
+            asyncio.create_task(_safe_process_pr(data))
             return {"ok": True}
         else:
             logger.info(f'Действие {action} не обрабатывается')
             return {"ok": True, "ignored": True}
 
     return {"ok": True}
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    logger.info("Завершение работы: закрытие клиента GitHub...")
+    await GitHubClient.close()
+    logger.info("Клиент GitHub успешно закрыт")
+
