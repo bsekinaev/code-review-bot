@@ -52,10 +52,8 @@ def process_pr_task(self, data: dict):
     try:
         asyncio.run(_run_async())
     except Exception as exc:
-        # Экспоненциальная задержка: 30s -> 60s -> 120s
-        countdown = 30 * (2 ** self.request.retries)
-        logger.warning(f"⚠️ Task failed, retrying in {countdown}s...")
-        self.retry(exc=exc, countdown=countdown)
+        logger.warning(f"⚠️ Task failed, retrying... (attempt {self.request.retries + 1})")
+        self.retry(exc=exc)
 
 
 async def _execute_pr_logic(data: dict, db):
