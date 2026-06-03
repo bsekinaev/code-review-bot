@@ -26,6 +26,7 @@ def run_ruff(file_content: str, filename: str = "file.py",
             cmd,
             capture_output=True,
             text=True,
+            timeout=30
         )
         if result.returncode == 0:
             return []
