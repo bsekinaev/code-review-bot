@@ -333,7 +333,6 @@ code-review-bot/
 ---
 
 ## 👤 Автор
-
 **Batraz Sekinaev**
 - 🐙 GitHub: [@bsekinaev](https://github.com/bsekinaev)
 - 💼 LinkedIn: [Batraz Sekinaev](https://linkedin.com/in/bsekinaev)
