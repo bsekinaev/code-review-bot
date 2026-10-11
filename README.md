@@ -1,7 +1,7 @@
 # 🤖 Code Review Bot
 
-Промышленный AI-powered ревьюер Python-кода для Pull Requests на GitHub.
-Основан на **FastAPI**, **Celery**, **PostgreSQL** и **GigaChat**. Бот анализирует только изменённые строки, комбинирует линтер (Ruff) с AI-инсайтами по безопасности и архитектуре, оставляет замечания прямо в PR и уведомляет о результатах в Telegram.
+Личный проект: AI-assisted ревьюер Python-кода для Pull Requests на GitHub.
+Основан на **FastAPI**, **Celery**, **PostgreSQL** и **GigaChat**. Бот анализирует только изменённые строки, комбинирует линтер (Ruff) с AI-инсайтами по безопасности и архитектуре, публикует результаты проверки в Pull Request и уведомляет о них в Telegram.
 
 <br>
 <div align="center">
@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
   <img src="https://img.shields.io/badge/GitHub_Actions-CI%2FCD-2088FF?style=for-the-badge&logo=githubactions&logoColor=white" alt="GitHub Actions">
   <br>
-  <img src="https://github.com/bsekinaev/code-review-bot/actions/workflows/deploy.yml/badge.svg" alt="CI/CD Status">
+  <img src="https://github.com/bsekinaev/code-review-bot/actions/workflows/deploy.yml/badge.svg" alt="Test and Deploy workflow status">
 </div>
 
 ---
@@ -313,18 +313,14 @@ code-review-bot/
 | **Телеграм уведомления не приходят** | Проверьте `TELEGRAM_BOT_TOKEN` и `CHAT_ID`. Бот должен быть добавлен в чат с правами на отправку сообщений. |
 
 ---
-## 📊 Метрики эксплуатации (6 месяцев)
+## ✅ Проверки и ограничения
 
-| Метрика | Значение | Комментарий |
-|---------|----------|-------------|
-| **Доступность** | 100% | Zero-downtime деплои через GitHub Actions |
-| **Latency (p95)** | ~2 сек | Анализ diff-патча средней сложности |
-| **Обработано PR** | 150+ | Личные проекты + тестовые репозитории |
-| **Экономия времени** | 30–40% | Сокращение ручного ревью за счёт автокомментариев |
-| **GitHub API calls** | −98% | Кэширование access-токенов (TTL 29 мин) |
-| **AI fallback rate** | <2% | Graceful degradation на Ruff при недоступности LLM |
-| **Ошибки в продакшене** | 0 критичных | Все инциденты — предупреждения в Sentry, без downtime |
+- Автоматизированные тесты запускаются в job `test` workflow [Test and Deploy](https://github.com/bsekinaev/code-review-bot/actions/workflows/deploy.yml).
+- В [запуске от 4 июня 2026 года](https://github.com/bsekinaev/code-review-bot/actions/runs/26970911204) тесты прошли, но job деплоя на VPS завершился ошибкой. Успешная сборка образа и прохождение тестов **не означают**, что сервис развёрнут и работает в production.
+- Inline-комментарии к конкретным строкам PR указаны в roadmap, а не как завершённая возможность.
+- Показатели uptime, p95, количества обработанных PR и экономии времени не публикуются без подтверждаемых результатов мониторинга и методики измерения.
 
+---
 
 ## 🚧 Roadmap
 
