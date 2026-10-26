@@ -16,7 +16,9 @@ AI_ENABLED = config("AI_ENABLED", default=False, cast=bool)
 GIGACHAT_CLIENT_ID = config("GIGACHAT_CLIENT_ID", default="")
 GIGACHAT_CLIENT_SECRET = config("GIGACHAT_CLIENT_SECRET", default="")
 GIGACHAT_SCOPE = config("GIGACHAT_SCOPE", default="GIGACHAT_API_PERS")
-VERIFY_SSL = config("GIGACHAT_VERIFY_SSL", default=False, cast=bool)
+VERIFY_SSL = config("GIGACHAT_VERIFY_SSL", default=True, cast=bool)
+if not VERIFY_SSL:
+    raise RuntimeError("TLS verification must remain enabled; configure a trusted CA instead")
 
 TOKEN_URL = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
 API_BASE = "https://gigachat.devices.sberbank.ru/api/v1"

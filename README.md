@@ -139,7 +139,7 @@ DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/code_review_b
 AI_ENABLED=True
 GIGACHAT_CLIENT_ID=your_client_id
 GIGACHAT_CLIENT_SECRET=your_client_secret
-GIGACHAT_VERIFY_SSL=False  # True для production
+GIGACHAT_VERIFY_SSL=True  # TLS обязателен; при необходимости настройте доверенный CA через SSL_CERT_FILE
 ```
 
 ### Миграции БД

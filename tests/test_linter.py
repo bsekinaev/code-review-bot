@@ -12,7 +12,7 @@ def test_unused_import():
     assert any ('os' in p.get("message",'') for p in problems)
 
 def test_unused_import_ignored():
-    code = 'import os\nprint("hello")\n'
+    code = 'import os\n\nprint("hello")\n'
     problems = run_ruff(code, ignore_rules=['F401'])
     assert len(problems) == 0
 
