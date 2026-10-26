@@ -24,7 +24,7 @@ jobs:
           PYTHONPATH: .
 
   build-and-deploy:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && vars.ENABLE_VPS_DEPLOY == 'true'
     needs: test
     runs-on: ubuntu-latest
     permissions:
