@@ -1,7 +1,7 @@
 # 🤖 Code Review Bot
 
-Личный проект: AI-assisted ревьюер Python-кода для Pull Requests на GitHub.
-Основан на **FastAPI**, **Celery**, **PostgreSQL** и **GigaChat**. Бот анализирует только изменённые строки, комбинирует линтер (Ruff) с AI-инсайтами по безопасности и архитектуре, публикует результаты проверки в Pull Request и уведомляет о них в Telegram.
+Учебный pet-проект: сервис автоматизированного ревью Python-кода в Pull Requests на GitHub. Промышленное внедрение и эксплуатационные SLA не заявляются.
+Основан на **FastAPI**, **Celery**, **PostgreSQL** и **GigaChat**. Сервис ориентируется на изменённые строки, комбинирует Ruff с анализом через GigaChat, формирует отчёт для Pull Request и предусматривает уведомления в Telegram.
 
 <br>
 <div align="center">
@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
   <img src="https://img.shields.io/badge/GitHub_Actions-CI%2FCD-2088FF?style=for-the-badge&logo=githubactions&logoColor=white" alt="GitHub Actions">
   <br>
-  <img src="https://github.com/bsekinaev/code-review-bot/actions/workflows/deploy.yml/badge.svg" alt="Test and Deploy workflow status">
+  <img src="https://github.com/bsekinaev/code-review-bot/actions/workflows/deploy.yml/badge.svg" alt="CI/CD Status">
 </div>
 
 ---
@@ -40,24 +40,24 @@
 - 🎯 **Анализ только изменённого кода** — бот фокусируется на строках, затронутых в PR, исключая спам старыми предупреждениями
 - 🧠 **AI-инсайты (GigaChat)** — автоматический поиск уязвимостей, code smells и рекомендации по рефакторингу
 - 🛡️ **Гибкая настройка** — `.codereview.yml` в каждом репозитории позволяет управлять правилами линтера на лету
-- ⚡ **Асинхронная обработка** — Celery + Redis обеспечивают масштабируемую фоновую обработку PR без блокировки вебхуков
+- ⚡ **Асинхронная обработка** — Celery + Redis позволяют обрабатывать события PR в фоновых задачах
 - 💾 **История и аналитика** — PostgreSQL сохраняет все ревью для последующего анализа и метрик
 - 📢 **Мгновенные уведомления** — результаты публикуются в PR, краткий отчёт дублируется в Telegram
-- 🐳 **Полная контейнеризация** — запуск от локальной машины до облачного кластера
+- 🐳 **Docker** — Compose-конфигурации для разработки и предполагаемого серверного запуска
 - 🔒 **Безопасность** — HMAC-верификация вебхуков, кэширование токенов, изоляция сессий БД
 
 ---
 
 ## 🏗 Архитектура
 
-Бот построен на модульной, отказоустойчивой архитектуре:
+Проект разделён на webhook API, фоновые задачи и интеграции с внешними сервисами:
 
 ![architecture.png](docs/architecture.png)
 **Ключевые принципы:**
 - 📦 **Изоляция ответственности** — каждый модуль решает одну задачу
 - 🔄 **Retry с exponential backoff** — автоматические повторные попытки при сбоях API
 - 💾 **Graceful Fallback** — если AI недоступен, бот продолжает работать на чистом Ruff
-- 🔐 **Токен-кэширование** — in-memory кэш с TTL снижает нагрузку на GitHub API на 98%
+- 🔐 **Кэширование токенов** — повторное использование installation-токена GitHub App в пределах TTL; процент снижения API-запросов не измерялся
 
 ---
 
@@ -139,7 +139,7 @@ DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/code_review_b
 AI_ENABLED=True
 GIGACHAT_CLIENT_ID=your_client_id
 GIGACHAT_CLIENT_SECRET=your_client_secret
-GIGACHAT_VERIFY_SSL=False  # True для production
+GIGACHAT_VERIFY_SSL=True  # TLS обязателен; при необходимости настройте доверенный CA через SSL_CERT_FILE
 ```
 
 ### Миграции БД
@@ -160,15 +160,15 @@ alembic upgrade head
 docker-compose -f docker-compose.dev.yml up -d
 ```
 
-### Production
-На VPS используется отдельный `docker-compose.yml`, который тянет готовый образ из GHCR:
+### Пример серверного запуска
+В репозитории предусмотрен отдельный `docker-compose.yml` для образа из GHCR. Этот пример не подтверждает фактическое развёртывание на VPS:
 ```bash
 cd /opt/code-review-bot
 docker-compose pull bot
 docker-compose up -d --force-recreate bot
 ```
 
-### Файловая структура на сервере
+### Предполагаемая файловая структура на сервере
 ```
 /opt/code-review-bot/
 ├── docker-compose.yml   # Конфигурация для production (image, не build)
@@ -180,15 +180,15 @@ docker-compose up -d --force-recreate bot
 
 ## 🔄 CI/CD
 
-Воркфлоу `.github/workflows/deploy.yml` запускается при пуше в `main`:
+Воркфлоу `.github/workflows/deploy.yml` запускает тесты при `push` в `main` и `pull_request` в `main`. Сборка и деплой разрешены только при `push` и `vars.ENABLE_VPS_DEPLOY == 'true'`; наличие этих шагов не подтверждает развёртывание сервиса:
 
 | Этап | Описание |
 |------|----------|
 | **1. Test** | Установка зависимостей, запуск pytest с `PYTHONPATH=.` |
-| **2. Build & Push** | Сборка Docker-образа, пуш в `ghcr.io/${{ github.repository }}:latest` |
-| **3. Deploy** | SSH-подключение к VPS, `docker-compose pull` + `up -d` |
+| **2. Build & Push (условно)** | Сборка и публикация Docker-образа при разрешённом деплое |
+| **3. Deploy (условно)** | SSH-деплой, если явно включён и настроен |
 
-### Необходимые секреты GitHub
+### Необходимые секреты GitHub для необязательного VPS-деплоя
 | Secret | Описание |
 |--------|----------|
 | `VPS_HOST` | IP или домен сервера |
@@ -228,7 +228,7 @@ exclude:
 
 ```
 code-review-bot/
-├── .github/workflows/deploy.yml    # Пайплайн CI/CD: тесты → сборка образа → деплой на VPS
+├── .github/workflows/deploy.yml    # CI; сборка/деплой только при явном разрешении
 ├── alembic/                        # Миграции базы данных (Alembic)
 │   ├── env.py                      # Конфигурация окружения миграций
 │   └── versions/                   # Файлы миграций (создаются автоматически)
@@ -315,10 +315,10 @@ code-review-bot/
 ---
 ## ✅ Проверки и ограничения
 
-- Автоматизированные тесты запускаются в job `test` workflow [Test and Deploy](https://github.com/bsekinaev/code-review-bot/actions/workflows/deploy.yml).
-- В [запуске от 4 июня 2026 года](https://github.com/bsekinaev/code-review-bot/actions/runs/26970911204) тесты прошли, но job деплоя на VPS завершился ошибкой. Успешная сборка образа и прохождение тестов **не означают**, что сервис развёрнут и работает в production.
-- Inline-комментарии к конкретным строкам PR указаны в roadmap, а не как завершённая возможность.
-- Показатели uptime, p95, количества обработанных PR и экономии времени не публикуются без подтверждаемых результатов мониторинга и методики измерения.
+- В [успешном CI на main от 26 октября 2026](https://github.com/bsekinaev/code-review-bot/actions/runs/40316073240) workflow завершился с результатом success. Деплой в отдельном job условный; успешный CI **не подтверждает**, что сервис установлен на VPS.
+- Проект учебный; эксплуатационные метрики uptime, p95, количества обработанных PR, экономии времени и числа production-инцидентов не измерялись.
+- Inline-комментарии к отдельным строкам PR остаются в roadmap, а не заявляются как готовая возможность.
+- Настоящие ключи GitHub App, Telegram и GigaChat следует задавать только в локальном `.env` и GitHub Secrets; файлы с секретами нельзя коммитить.
 
 ---
 

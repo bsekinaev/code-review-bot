@@ -3,6 +3,8 @@ name: Test and Deploy
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -22,6 +24,7 @@ jobs:
           PYTHONPATH: .
 
   build-and-deploy:
+    if: github.event_name == 'push' && vars.ENABLE_VPS_DEPLOY == 'true'
     needs: test
     runs-on: ubuntu-latest
     permissions:
